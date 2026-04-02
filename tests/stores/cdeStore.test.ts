@@ -114,6 +114,32 @@ describe('cdeStore', () => {
     await expect(store.saveActive()).resolves.toBeUndefined()
   })
 
+  it('loadFolder loads only .json files from a directory handle', async () => {
+    const store = useCdeStore()
+    const jsonHandle = mockFileHandle('a.json', minimalCde)
+    const txtHandle = { name: 'readme.txt', kind: 'file' as const } as unknown as FileSystemFileHandle
+    const dirHandle = {
+      values: vi.fn().mockReturnValue(
+        (async function* () {
+          yield jsonHandle
+          yield txtHandle
+        })()
+      ),
+    } as unknown as FileSystemDirectoryHandle
+    await store.loadFolder(dirHandle)
+    expect(store.files).toHaveLength(1)
+    expect(store.files[0].name).toBe('a.json')
+  })
+
+  it('saveActive calls close on the writable stream', async () => {
+    const store = useCdeStore()
+    const handle = mockFileHandle('test.json', minimalCde)
+    await store.loadFiles([handle])
+    await store.saveActive()
+    const writableMock = await (handle.createWritable as ReturnType<typeof vi.fn>).mock.results[0].value
+    expect(writableMock.close).toHaveBeenCalled()
+  })
+
   it('replaceCde fully replaces the CDE and marks dirty', async () => {
     const store = useCdeStore()
     await store.loadFiles([mockFileHandle('test.json', minimalCde)])

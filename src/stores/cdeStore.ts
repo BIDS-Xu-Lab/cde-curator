@@ -21,7 +21,13 @@ export const useCdeStore = defineStore('cde', () => {
     for (const handle of handles) {
       const file = await handle.getFile()
       const text = await file.text()
-      const cde = JSON.parse(text) as CdeDocument
+      let cde: CdeDocument
+      try {
+        cde = JSON.parse(text) as CdeDocument
+      } catch {
+        console.warn(`Skipping "${handle.name}": invalid JSON`)
+        continue
+      }
       files.value.push({ name: handle.name, handle, cde, dirty: false })
     }
     if (activeIndex.value === null && files.value.length > 0) {
@@ -40,9 +46,12 @@ export const useCdeStore = defineStore('cde', () => {
   }
 
   function selectFile(index: number) {
+    if (index < 0 || index >= files.value.length) return
     activeIndex.value = index
   }
 
+  // Shallow-merges patch into the active CDE. Callers updating nested objects
+  // (e.g. valueDomain) must spread the existing nested object themselves.
   function updateCde(patch: Partial<CdeDocument>) {
     if (activeIndex.value === null) return
     const entry = files.value[activeIndex.value]
