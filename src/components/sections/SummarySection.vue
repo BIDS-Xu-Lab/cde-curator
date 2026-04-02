@@ -70,10 +70,20 @@ const firstDefinition = computed(() => cde.value.definitions[0]?.definition ?? '
 
 function onPreferredDesignationInput(e: Event) {
   const val = (e.target as HTMLInputElement).value
-  const updated = cde.value.designations.map(d =>
-    d.tags.includes('Preferred Question Text') ? { ...d, designation: val } : d
-  )
-  store.updateCde({ designations: updated })
+  const hasPreferred = cde.value.designations.some(d => d.tags.includes('Preferred Question Text'))
+  if (hasPreferred) {
+    const updated = cde.value.designations.map(d =>
+      d.tags.includes('Preferred Question Text') ? { ...d, designation: val } : d
+    )
+    store.updateCde({ designations: updated })
+  } else {
+    store.updateCde({
+      designations: [
+        ...cde.value.designations,
+        { designation: val, tags: ['Preferred Question Text'], sources: [] },
+      ],
+    })
+  }
 }
 
 function onDefinitionInput(e: Event) {

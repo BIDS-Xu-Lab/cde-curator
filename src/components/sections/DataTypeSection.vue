@@ -18,7 +18,7 @@
           :value="(cde.valueDomain as any).minValue ?? ''"
           class="w-full"
           placeholder="Minimum"
-          @input="(e) => updateValueDomain({ minValue: (e.target as HTMLInputElement).value })"
+          @input="(e) => updateValueDomain({ minValue: parseNumberField((e.target as HTMLInputElement).value) })"
         />
 
         <label class="text-gray-500 font-medium pt-1">Max Value</label>
@@ -26,7 +26,7 @@
           :value="(cde.valueDomain as any).maxValue ?? ''"
           class="w-full"
           placeholder="Maximum"
-          @input="(e) => updateValueDomain({ maxValue: (e.target as HTMLInputElement).value })"
+          @input="(e) => updateValueDomain({ maxValue: parseNumberField((e.target as HTMLInputElement).value) })"
         />
 
         <label class="text-gray-500 font-medium pt-1">Precision</label>
@@ -34,7 +34,7 @@
           :value="(cde.valueDomain as any).precision ?? ''"
           class="w-full"
           placeholder="Decimal precision"
-          @input="(e) => updateValueDomain({ precision: (e.target as HTMLInputElement).value })"
+          @input="(e) => updateValueDomain({ precision: parseNumberField((e.target as HTMLInputElement).value) })"
         />
       </template>
 
@@ -122,6 +122,12 @@ function addPV() {
 function removePV(index: number) {
   const pvs = cde.value.valueDomain.permissibleValues.filter((_, i) => i !== index)
   updateValueDomain({ permissibleValues: pvs })
+}
+
+function parseNumberField(raw: string): number | string {
+  if (raw === '' || raw === '-') return raw
+  const n = Number(raw)
+  return Number.isNaN(n) ? raw : n
 }
 
 function updatePV(index: number, field: keyof PermissibleValue, value: string) {
