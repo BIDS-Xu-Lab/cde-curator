@@ -35,3 +35,5 @@ bun.lockb
 .turbo/
 .parcel-cache/
 vite.svg
+
+.claude/
