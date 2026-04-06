@@ -16,6 +16,21 @@
       outlined
       @click="onLoadFolder"
     />
+    <Button
+      icon="pi pi-book"
+      label="Examples"
+      size="small"
+      outlined
+      aria-haspopup="true"
+      aria-controls="sample-menu"
+      @click="toggleSampleMenu"
+    />
+    <Menu
+      id="sample-menu"
+      ref="sampleMenu"
+      :model="sampleMenuItems"
+      popup
+    />
 
     <div class="flex-1" />
 
@@ -23,7 +38,7 @@
       icon="pi pi-save"
       label="Save"
       size="small"
-      :disabled="!store.activeFile?.dirty"
+      :disabled="!store.activeFile?.dirty || !store.canSaveActive"
       @click="store.saveActive()"
     />
     <Button
@@ -53,10 +68,14 @@
             <strong>Load Folder</strong> — load all <code>.json</code> files from a directory.
           </li>
           <li>
+            <strong>Examples</strong> — load a built-in sample CDE for demos without accessing local files.
+          </li>
+          <li>
             <strong>Save</strong> — write the currently selected file back to disk.<br />
             Keyboard shortcut: <kbd class="bg-gray-100 border border-gray-300 rounded px-1">⌘S</kbd>
             / <kbd class="bg-gray-100 border border-gray-300 rounded px-1">Ctrl+S</kbd>
           </li>
+          <li>Built-in samples are editable, but <strong>Save</strong> is disabled because they are not backed by a local file.</li>
           <li>Files with unsaved changes are marked with <strong class="text-orange-500">•</strong> in the file list.</li>
           <li>Click <strong>{ }</strong> in the editor to view/edit the raw JSON.</li>
         </ul>
@@ -69,13 +88,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
+import Menu from 'primevue/menu'
+import type { MenuItem } from 'primevue/menuitem'
 import { useCdeStore } from '@/stores/cdeStore'
+import { cdeSamples } from '@/samples/cdeSamples'
 
 const store = useCdeStore()
 const helpVisible = ref(false)
+const sampleMenu = ref<InstanceType<typeof Menu> | null>(null)
+
+const sampleMenuItems = computed<MenuItem[]>(() =>
+  cdeSamples.map((sample) => ({
+    label: sample.menuLabel,
+    icon: 'pi pi-file-import',
+    command: () => store.loadSample(sample.id),
+  }))
+)
 
 async function onSelectFile() {
   try {
@@ -96,5 +127,9 @@ async function onLoadFolder() {
   } catch {
     // user cancelled
   }
+}
+
+function toggleSampleMenu(event: Event) {
+  sampleMenu.value?.toggle(event)
 }
 </script>

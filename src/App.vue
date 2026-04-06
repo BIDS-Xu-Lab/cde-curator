@@ -10,7 +10,9 @@
         <CdeEditor v-if="store.activeFile" />
         <div v-else class="flex flex-col items-center justify-center h-full gap-3 text-gray-400">
           <i class="pi pi-folder-open text-4xl" />
-          <p class="text-sm">Use <strong>Select File</strong> or <strong>Load Folder</strong> to get started.</p>
+          <p class="text-sm">
+            Use <strong>Select File</strong>, <strong>Load Folder</strong>, or <strong>Examples</strong> to get started.
+          </p>
         </div>
       </main>
     </div>

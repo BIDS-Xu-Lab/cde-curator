@@ -114,6 +114,35 @@ describe('cdeStore', () => {
     await expect(store.saveActive()).resolves.toBeUndefined()
   })
 
+  it('loadSample adds the bundled sample and selects it', () => {
+    const store = useCdeStore()
+    store.loadSample('nhgri-age-first-used-needle')
+    expect(store.files).toHaveLength(1)
+    expect(store.files[0].source).toBe('sample')
+    expect(store.files[0].name).toBe('sample.nhgri-age-first-used-needle.json')
+    expect(store.activeIndex).toBe(0)
+    expect(store.canSaveActive).toBe(false)
+  })
+
+  it('loadSample replaces an existing bundled sample instead of appending duplicates', () => {
+    const store = useCdeStore()
+    store.loadSample('nhgri-age-first-used-needle')
+    store.updateCde({ archived: true })
+    expect(store.files[0].dirty).toBe(true)
+    store.loadSample('nhgri-age-first-used-needle')
+    expect(store.files).toHaveLength(1)
+    expect(store.files[0].cde.archived).toBe(false)
+    expect(store.files[0].dirty).toBe(false)
+  })
+
+  it('saveActive does nothing for a bundled sample without a file handle', async () => {
+    const store = useCdeStore()
+    store.loadSample('nhgri-age-first-used-needle')
+    store.updateCde({ archived: true })
+    await expect(store.saveActive()).resolves.toBeUndefined()
+    expect(store.files[0].dirty).toBe(true)
+  })
+
   it('loadFolder loads only .json files from a directory handle', async () => {
     const store = useCdeStore()
     const jsonHandle = mockFileHandle('a.json', minimalCde)

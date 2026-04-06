@@ -1,12 +1,14 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { CdeDocument } from '@/types/cde'
+import { cdeSamples, type CdeSampleId } from '@/samples/cdeSamples'
 
 export interface FileEntry {
   name: string
-  handle: FileSystemFileHandle
+  handle?: FileSystemFileHandle
   cde: CdeDocument
   dirty: boolean
+  source: 'filesystem' | 'sample'
 }
 
 export const useCdeStore = defineStore('cde', () => {
@@ -16,6 +18,7 @@ export const useCdeStore = defineStore('cde', () => {
   const activeFile = computed<FileEntry | null>(() =>
     activeIndex.value !== null ? files.value[activeIndex.value] ?? null : null
   )
+  const canSaveActive = computed(() => Boolean(activeFile.value?.handle))
 
   async function loadFiles(handles: FileSystemFileHandle[]) {
     for (const handle of handles) {
@@ -28,7 +31,7 @@ export const useCdeStore = defineStore('cde', () => {
         console.warn(`Skipping "${handle.name}": invalid JSON`)
         continue
       }
-      files.value.push({ name: handle.name, handle, cde, dirty: false })
+      files.value.push({ name: handle.name, handle, cde, dirty: false, source: 'filesystem' })
     }
     if (activeIndex.value === null && files.value.length > 0) {
       activeIndex.value = 0
@@ -67,9 +70,42 @@ export const useCdeStore = defineStore('cde', () => {
     entry.dirty = true
   }
 
+  function loadSample(sampleId: CdeSampleId) {
+    const sample = cdeSamples.find((entry) => entry.id === sampleId)
+    if (!sample) {
+      console.warn(`Sample "${sampleId}" not found`)
+      return
+    }
+
+    const existingIndex = files.value.findIndex(
+      (entry) => entry.source === 'sample' && entry.name === sample.name
+    )
+    const clonedCde = structuredClone(sample.cde)
+
+    if (existingIndex >= 0) {
+      files.value[existingIndex] = {
+        name: sample.name,
+        cde: clonedCde,
+        dirty: false,
+        source: 'sample',
+      }
+      activeIndex.value = existingIndex
+      return
+    }
+
+    files.value.push({
+      name: sample.name,
+      cde: clonedCde,
+      dirty: false,
+      source: 'sample',
+    })
+    activeIndex.value = files.value.length - 1
+  }
+
   async function saveActive() {
     if (activeIndex.value === null) return
     const entry = files.value[activeIndex.value]
+    if (!entry.handle) return
     const writable = await entry.handle.createWritable()
     await writable.write(JSON.stringify(entry.cde, null, 2))
     await writable.close()
@@ -80,11 +116,13 @@ export const useCdeStore = defineStore('cde', () => {
     files,
     activeIndex,
     activeFile,
+    canSaveActive,
     loadFiles,
     loadFolder,
     selectFile,
     updateCde,
     replaceCde,
+    loadSample,
     saveActive,
   }
 })
